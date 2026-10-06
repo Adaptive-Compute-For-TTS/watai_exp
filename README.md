@@ -792,3 +792,4 @@ dots.tts code and released checkpoints are licensed under [Apache-2.0](LICENSE).
 - [HoliTok](https://github.com/bovod-sjtu/HoliTok) — for the AudioVAE design.
 - [BigVGAN](https://github.com/NVIDIA/BigVGAN) — for the vocoder design.
 - [CAM++](https://github.com/alibaba-damo-academy/3D-Speaker) — for speaker x-vector encoder.
+# watai_exp
