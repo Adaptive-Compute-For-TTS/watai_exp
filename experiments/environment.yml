@@ -1,0 +1,7 @@
+name: dots_tts
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pynini=2.1.7
+prefix: /opt/homebrew/Caskroom/miniconda/base/envs/dots_tts

@@ -35,3 +35,8 @@ apps/gradio/*.log
 *wav
 !apps/gradio/default_prompts/
 !apps/gradio/default_prompts/*.wav
+
+# Conda environments
+.conda/
+conda-env/
+env/
