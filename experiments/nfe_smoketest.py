@@ -11,6 +11,7 @@ runtime = DotsTtsRuntime.from_pretrained(
     "dots-studio/dots.tts-soar",
     precision="float32",   # important: your Mac does not have CUDA
     optimize=False,
+    max_generate_length=80,
 )
 
 print("Model loaded!")
@@ -21,7 +22,7 @@ print("Generating speech...")
 
 result = runtime.generate(
     text="Hello, this is my first dots TTS experiment.",
-    prompt_audio_path="docs/_static/audio/male-voice.wav",
+    prompt_audio_path="my_files/abhi1.wav",
     prompt_text=(
         "Hey, Adam here. Let's create something that feels real, "
         "sounds human, and connects every time."
@@ -36,7 +37,7 @@ audio = result["audio"].float().cpu().squeeze().numpy()
 
 
 # 4. Save it
-output_path = Path("experiments/output_nfe10.wav")
+output_path = Path("audio/output_nfe10.wav")
 
 sf.write(
     output_path,

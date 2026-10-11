@@ -1,0 +1,4 @@
+prompt_id,text,reference_audio,reference_text
+short,"The small red bird landed on the garden fence.",my_files/abhi1.wav,"Hey, Adam here. Let's create something that feels real, sounds human, and connects every time."
+medium,"On Saturday morning, Maya packed a notebook, a thermos of tea, and a camera before taking the train into the city.",my_files/abhi1.wav,"Hey, Adam here. Let's create something that feels real, sounds human, and connects every time."
+long,"When the storm finally passed, the neighbors came outside to clear branches from the road. By sunset, they had finished the work and were sharing dinner on the front porch.",my_files/abhi1.wav,"Hey, Adam here. Let's create something that feels real, sounds human, and connects every time."
