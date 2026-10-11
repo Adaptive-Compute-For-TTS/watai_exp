@@ -32,7 +32,6 @@ debug_*
 apps/gradio/*.log
 
 # Audio outputs (keep Gradio's bundled default prompts)
-*wav
 !apps/gradio/default_prompts/
 !apps/gradio/default_prompts/*.wav
 
