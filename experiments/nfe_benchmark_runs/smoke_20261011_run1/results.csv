@@ -1,0 +1,2 @@
+prompt_id,NFE,repeat,latency_seconds,audio_duration_seconds,RTF,sample_rate,output_path,model,device,precision,optimize,seed,ode_method,guidance_scale,speaker_scale,max_generate_length,max_sequence_length
+smoke,10,1,5.652805,2.880000,1.962780,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/smoke_20261011_run1/output_smoke_nfe10.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
