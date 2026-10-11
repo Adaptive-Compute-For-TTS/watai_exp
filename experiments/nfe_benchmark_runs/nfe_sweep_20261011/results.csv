@@ -1,0 +1,10 @@
+prompt_id,NFE,repeat,latency_seconds,audio_duration_seconds,RTF,sample_rate,output_path,model,device,precision,optimize,seed,ode_method,guidance_scale,speaker_scale,max_generate_length,max_sequence_length
+short,4,1,9.971619,9.120000,1.093379,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe4.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,6,1,8.734302,9.120000,0.957709,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe6.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,8,1,10.875667,9.120000,1.192507,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe8.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,10,1,13.200358,9.120000,1.447408,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe10.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,12,1,13.221412,8.160000,1.620271,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe12.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,16,1,18.268443,8.800000,2.075959,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe16.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,20,1,22.603300,8.960000,2.522690,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe20.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,24,1,26.754689,8.960000,2.986014,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe24.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
+short,32,1,36.804706,9.120000,4.035604,48000,/home/nicholaskim/watai_exp/experiments/nfe_benchmark_runs/nfe_sweep_20261011/output_short_nfe32.wav,dots-studio/dots.tts-soar,cuda,bfloat16,False,42,euler,1.2,1.5,80,2048
