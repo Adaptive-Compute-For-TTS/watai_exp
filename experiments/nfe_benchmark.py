@@ -122,8 +122,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--repeats",
         type=int,
-        default=1,
-        help="Measured runs per prompt/NFE pair (default: 1)",
+        default=3,
+        help="Measured runs per prompt/NFE pair (default: 3)",
     )
     parser.add_argument("--precision", default="bfloat16")
     parser.add_argument(
@@ -417,14 +417,23 @@ def load_resume_state(
                     f"but current setting is {expected_value!r}"
                 )
 
-        expected_wav = output_wav_path(
-            output_dir, case[0], case[1], case[2], repeats
-        )
+        expected_wav = output_wav_path(output_dir, case[0], case[1], case[2], repeats)
+        saved_wav = expected_wav
         if row["output_path"] != str(expected_wav):
-            raise ValueError(
-                f"Saved output path does not match this run: {row['output_path']}"
-            )
-        if not expected_wav.is_file():
+            # Preserve a completed first pass from a run originally configured
+            # with --repeats 1, whose WAV filename had no repeat suffix.
+            legacy_first_pass = output_wav_path(output_dir, case[0], case[1], 1, 1)
+            if (
+                repeats > 1
+                and case[2] == 1
+                and row["output_path"] == str(legacy_first_pass)
+            ):
+                saved_wav = legacy_first_pass
+            else:
+                raise ValueError(
+                    f"Saved output path does not match this run: {row['output_path']}"
+                )
+        if not saved_wav.is_file():
             # A saved row without its audio is incomplete and should rerun.
             rows_need_rewrite = True
             continue
