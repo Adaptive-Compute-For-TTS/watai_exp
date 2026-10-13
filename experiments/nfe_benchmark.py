@@ -139,6 +139,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Use only the first N prompts, useful for a quick correctness smoke run",
     )
     parser.add_argument(
+        "--prompt-offset",
+        type=int,
+        default=0,
+        help="Skip the first N manifest prompts before applying --prompt-limit",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
@@ -161,6 +167,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--repeats must be positive")
     if args.prompt_limit is not None and args.prompt_limit <= 0:
         parser.error("--prompt-limit must be positive")
+    if args.prompt_offset < 0:
+        parser.error("--prompt-offset cannot be negative")
     if args.max_generate_length <= 0 or args.max_sequence_length <= 0:
         parser.error("generation and sequence length limits must be positive")
     return args
@@ -312,8 +320,11 @@ def main(argv: list[str] | None = None) -> int:
         reference_audio=args.reference_audio,
         reference_text=args.reference_text,
     )
+    prompts = prompts[args.prompt_offset :]
     if args.prompt_limit is not None:
         prompts = prompts[: args.prompt_limit]
+    if not prompts:
+        raise ValueError("--prompt-offset and --prompt-limit select no prompts")
     safe_ids = [safe_prompt_id(prompt.prompt_id) for prompt in prompts]
     if len(set(safe_ids)) != len(safe_ids):
         raise ValueError("prompt_id values must produce unique output filenames")
