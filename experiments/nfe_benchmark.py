@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import re
 import time
 from dataclasses import dataclass
@@ -73,7 +74,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--manifest",
         type=Path,
         default=DEFAULT_MANIFEST,
-        help=f"CSV prompt manifest (default: {DEFAULT_MANIFEST})",
+        help=f"CSV or JSON prompt manifest (default: {DEFAULT_MANIFEST})",
+    )
+    parser.add_argument(
+        "--reference-audio",
+        type=Path,
+        default=None,
+        help="Shared reference audio for manifest rows without reference_audio",
+    )
+    parser.add_argument(
+        "--reference-text",
+        default=None,
+        help="Shared transcript for manifest rows without reference_text",
     )
     parser.add_argument(
         "--model",
@@ -154,56 +166,82 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def load_prompts(manifest_path: Path) -> list[BenchmarkPrompt]:
+def load_prompts(
+    manifest_path: Path,
+    *,
+    reference_audio: Path | None = None,
+    reference_text: str | None = None,
+) -> list[BenchmarkPrompt]:
     manifest_path = manifest_path.expanduser().resolve()
     if not manifest_path.is_file():
         raise FileNotFoundError(f"Prompt manifest does not exist: {manifest_path}")
 
-    required_fields = {"prompt_id", "text"}
-    prompts: list[BenchmarkPrompt] = []
-    with manifest_path.open("r", newline="", encoding="utf-8-sig") as manifest_file:
-        reader = csv.DictReader(manifest_file)
-        fields = set(reader.fieldnames or ())
-        missing = required_fields - fields
-        if missing:
+    if manifest_path.suffix.lower() == ".json":
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            data = data.get("prompts")
+        if not isinstance(data, list):
             raise ValueError(
-                f"Prompt manifest is missing required columns: {', '.join(sorted(missing))}"
+                "JSON prompt manifest must be a list of prompt objects or an object "
+                "with a 'prompts' list"
+            )
+        rows = list(enumerate(data, start=1))
+    else:
+        with manifest_path.open(
+            "r", newline="", encoding="utf-8-sig"
+        ) as manifest_file:
+            rows = list(enumerate(csv.DictReader(manifest_file), start=2))
+
+    prompts: list[BenchmarkPrompt] = []
+    for row_number, row in rows:
+        if not isinstance(row, dict):
+            raise ValueError(f"Manifest row {row_number} must be an object")
+
+        id_value = row.get("prompt_id") or row.get("id")
+        text_value = row.get("text")
+        prompt_id = "" if id_value is None else str(id_value).strip()
+        text = "" if text_value is None else str(text_value).strip()
+        row_audio_value = row.get("reference_audio")
+        row_audio_value = (
+            "" if row_audio_value is None else str(row_audio_value).strip()
+        )
+        row_reference_text = row.get("reference_text")
+        row_reference_text = (
+            "" if row_reference_text is None else str(row_reference_text).strip()
+        )
+        resolved_reference_text = row_reference_text or reference_text or None
+
+        if not prompt_id or not text:
+            raise ValueError(
+                f"Manifest row {row_number} must have non-empty id/prompt_id and text"
             )
 
-        for row_number, row in enumerate(reader, start=2):
-            prompt_id = (row.get("prompt_id") or "").strip()
-            text = (row.get("text") or "").strip()
-            audio_value = (row.get("reference_audio") or "").strip()
-            reference_text = (row.get("reference_text") or "").strip() or None
-            if not prompt_id or not text:
-                raise ValueError(
-                    f"Manifest row {row_number} must have non-empty prompt_id and text"
+        reference_audio_path = None
+        audio_value = row_audio_value or reference_audio
+        if audio_value:
+            reference_audio_path = Path(audio_value).expanduser()
+            if not reference_audio_path.is_absolute():
+                base_dir = manifest_path.parent if row_audio_value else Path.cwd()
+                reference_audio_path = base_dir / reference_audio_path
+            reference_audio_path = reference_audio_path.resolve()
+            if not reference_audio_path.is_file():
+                raise FileNotFoundError(
+                    f"Reference audio on manifest row {row_number} does not exist: "
+                    f"{reference_audio_path}"
                 )
-
-            reference_audio = None
-            if audio_value:
-                reference_audio = Path(audio_value).expanduser()
-                if not reference_audio.is_absolute():
-                    reference_audio = manifest_path.parent / reference_audio
-                reference_audio = reference_audio.resolve()
-                if not reference_audio.is_file():
-                    raise FileNotFoundError(
-                        f"Reference audio on manifest row {row_number} does not exist: "
-                        f"{reference_audio}"
-                    )
-            elif reference_text:
-                raise ValueError(
-                    f"Manifest row {row_number} has reference_text but no reference_audio"
-                )
-
-            prompts.append(
-                BenchmarkPrompt(
-                    prompt_id=prompt_id,
-                    text=text,
-                    reference_audio=reference_audio,
-                    reference_text=reference_text,
-                )
+        elif resolved_reference_text:
+            raise ValueError(
+                f"Manifest row {row_number} has reference_text but no reference_audio"
             )
+
+        prompts.append(
+            BenchmarkPrompt(
+                prompt_id=prompt_id,
+                text=text,
+                reference_audio=reference_audio_path,
+                reference_text=resolved_reference_text,
+            )
+        )
 
     if not prompts:
         raise ValueError(f"Prompt manifest contains no prompts: {manifest_path}")
@@ -269,7 +307,11 @@ def generate_once(
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    prompts = load_prompts(args.manifest)
+    prompts = load_prompts(
+        args.manifest,
+        reference_audio=args.reference_audio,
+        reference_text=args.reference_text,
+    )
     if args.prompt_limit is not None:
         prompts = prompts[: args.prompt_limit]
     safe_ids = [safe_prompt_id(prompt.prompt_id) for prompt in prompts]
