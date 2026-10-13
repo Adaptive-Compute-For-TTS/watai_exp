@@ -28,7 +28,7 @@ import json
 import re
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -138,7 +138,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--warmup-runs-per-case",
         type=int,
         default=1,
-        help="Unmeasured warmup generations for every prompt/NFE pair; set 0 to skip",
+        help=(
+            "Unmeasured warmup generations for each unit selected by "
+            "--warmup-policy; set 0 to skip"
+        ),
+    )
+    parser.add_argument(
+        "--warmup-policy",
+        choices=("per-prompt-nfe", "representative-prompt"),
+        default="per-prompt-nfe",
+        help=(
+            "Warm each pending prompt/NFE pair (current behavior), or warm each "
+            "pending NFE once using the first selected prompt"
+        ),
     )
     parser.add_argument(
         "--prompt-limit",
@@ -354,6 +366,84 @@ def resume_config(args: argparse.Namespace) -> dict[str, str]:
     }
 
 
+def run_metadata(
+    args: argparse.Namespace,
+    prompts: list[BenchmarkPrompt],
+) -> dict[str, Any]:
+    representative_prompt_id = None
+    if args.warmup_policy == "representative-prompt" and args.warmup_runs_per_case:
+        representative_prompt_id = prompts[0].prompt_id
+    wav_repeat_suffix = "" if args.repeats == 1 else "_rep{repeat}"
+    return {
+        "metadata_version": 1,
+        "manifest_path": str(args.manifest.expanduser().resolve()),
+        "prompt_count": len(prompts),
+        "prompt_ids": [prompt.prompt_id for prompt in prompts],
+        "prompt_snapshot": "prompts.csv",
+        "nfe_values": list(args.nfe_values),
+        "measured_repeats_per_prompt_nfe": args.repeats,
+        "model": args.model,
+        "revision": args.revision,
+        "cache_dir": None if args.cache_dir is None else str(args.cache_dir),
+        "precision": args.precision,
+        "optimize": args.optimize,
+        "seed": args.seed,
+        "ode_method": args.ode_method,
+        "guidance_scale": args.guidance_scale,
+        "speaker_scale": args.speaker_scale,
+        "max_generate_length": args.max_generate_length,
+        "max_sequence_length": args.max_sequence_length,
+        "warmup": {
+            "policy": args.warmup_policy,
+            "runs_per_unit": args.warmup_runs_per_case,
+            "unit": (
+                "NFE using representative prompt"
+                if args.warmup_policy == "representative-prompt"
+                else "prompt/NFE pair"
+            ),
+            "representative_prompt_id": representative_prompt_id,
+            "measured": False,
+            "save_wav": False,
+        },
+        "output": {
+            "results_file": "results.csv",
+            "audio_format": "WAV",
+            "audio_filename_pattern": (
+                f"output_{{prompt_id}}_nfe{{nfe}}{wav_repeat_suffix}.wav"
+            ),
+        },
+    }
+
+
+def write_run_metadata(
+    path: Path,
+    metadata: dict[str, Any],
+    *,
+    overwrite: bool = False,
+) -> None:
+    payload = {
+        **metadata,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    mode = "w" if overwrite else "x"
+    with path.open(mode, encoding="utf-8") as metadata_file:
+        json.dump(payload, metadata_file, indent=2)
+        metadata_file.write("\n")
+
+
+def validate_run_metadata(path: Path, expected: dict[str, Any]) -> None:
+    try:
+        actual = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Cannot read run metadata: {path}") from exc
+    actual.pop("created_at_utc", None)
+    if actual != expected:
+        raise ValueError(
+            "Run metadata does not match the requested benchmark settings. "
+            "Use the original settings/output directory or choose a new output directory."
+        )
+
+
 def load_resume_state(
     results_path: Path,
     *,
@@ -505,6 +595,8 @@ def main(argv: list[str] | None = None) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     results_path = output_dir / "results.csv"
     manifest_snapshot_path = output_dir / "prompts.csv"
+    run_metadata_path = output_dir / "run_metadata.json"
+    expected_metadata = run_metadata(args, prompts)
     expected_wavs = [
         output_wav_path(
             output_dir,
@@ -519,6 +611,12 @@ def main(argv: list[str] | None = None) -> int:
     ]
     completed_cases: set[tuple[str, int, int]] = set()
     if args.resume:
+        if run_metadata_path.exists():
+            validate_run_metadata(run_metadata_path, expected_metadata)
+        elif not results_path.exists():
+            # Legacy pilot runs have no metadata. Preserve their existing output
+            # directories when resuming them, while fresh runs get full metadata.
+            write_run_metadata(run_metadata_path, expected_metadata)
         if manifest_snapshot_path.exists():
             validate_prompt_snapshot(manifest_snapshot_path, prompts)
         elif results_path.exists():
@@ -544,7 +642,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         existing_outputs = [
             path
-            for path in [results_path, manifest_snapshot_path, *expected_wavs]
+            for path in [
+                results_path,
+                manifest_snapshot_path,
+                run_metadata_path,
+                *expected_wavs,
+            ]
             if path.exists()
         ]
         if existing_outputs and not args.overwrite:
@@ -555,6 +658,11 @@ def main(argv: list[str] | None = None) -> int:
                 f"{paths}"
             )
         write_prompt_snapshot(manifest_snapshot_path, prompts, overwrite=args.overwrite)
+        write_run_metadata(
+            run_metadata_path,
+            expected_metadata,
+            overwrite=args.overwrite,
+        )
 
     pending_pairs = {
         (prompt.prompt_id, nfe)
@@ -584,26 +692,52 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Loaded {args.model} on {runtime.device}; writing results under {output_dir}")
 
     if args.warmup_runs_per_case:
-        print(
-            f"Running {args.warmup_runs_per_case} unmeasured warmup(s) "
-            "for each pending prompt/NFE pair"
-        )
-        for prompt in prompts:
-            for nfe in args.nfe_values:
-                if (prompt.prompt_id, nfe) not in pending_pairs:
-                    continue
+        if args.warmup_policy == "representative-prompt":
+            pending_nfes = [
+                nfe
+                for nfe in args.nfe_values
+                if any(pair_nfe == nfe for _, pair_nfe in pending_pairs)
+            ]
+            warmup_prompt = prompts[0]
+            print(
+                f"Running {args.warmup_runs_per_case} unmeasured warmup(s) "
+                f"per pending NFE using prompt {warmup_prompt.prompt_id}; "
+                "warmups are not saved"
+            )
+            for nfe in pending_nfes:
                 for _ in range(args.warmup_runs_per_case):
                     generate_once(
                         runtime=runtime,
                         torch=torch,
                         seed_everything=seed_everything,
-                        prompt=prompt,
+                        prompt=warmup_prompt,
                         nfe=nfe,
                         seed=args.seed,
                         ode_method=args.ode_method,
                         guidance_scale=args.guidance_scale,
                         speaker_scale=args.speaker_scale,
                     )
+        else:
+            print(
+                f"Running {args.warmup_runs_per_case} unmeasured warmup(s) "
+                "for each pending prompt/NFE pair; warmups are not saved"
+            )
+            for prompt in prompts:
+                for nfe in args.nfe_values:
+                    if (prompt.prompt_id, nfe) not in pending_pairs:
+                        continue
+                    for _ in range(args.warmup_runs_per_case):
+                        generate_once(
+                            runtime=runtime,
+                            torch=torch,
+                            seed_everything=seed_everything,
+                            prompt=prompt,
+                            nfe=nfe,
+                            seed=args.seed,
+                            ode_method=args.ode_method,
+                            guidance_scale=args.guidance_scale,
+                            speaker_scale=args.speaker_scale,
+                        )
 
     results_existed = results_path.exists()
     if args.resume:
