@@ -20,7 +20,7 @@ python experiments/nfe_benchmark.py \
   --nfe-values 4 6 8 10 12 16 20 24 32 \
   --prompt-offset "$PROMPT_OFFSET" \
   --prompt-limit "$PROMPT_LIMIT" \
-  --repeats 5 \
+  --repeats 1 \
   --warmup-runs-per-case 1 \
   --precision bfloat16 \
   --max-generate-length 80 \
