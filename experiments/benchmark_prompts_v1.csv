@@ -1,0 +1,55 @@
+id,text,length_bucket,category,word_count,char_count,sentence_count,has_question,has_exclamation,has_quoted_speech,has_non_ascii,needs_normalization,version
+p001,The kettle is already on the stove.,short,plain,7,35,1,False,False,False,False,False,v1
+p002,Please close the window before you leave.,short,plain,7,41,1,False,False,False,False,False,v1
+p003,We walked home along the river.,short,plain,6,31,1,False,False,False,False,False,v1
+p004,"After the meeting ended, she packed her notes into a canvas bag and caught the last bus downtown.",medium,plain,18,97,1,False,False,False,False,False,v1
+p005,"The garden looks different every spring, because my neighbor keeps moving the tomato plants to a sunnier corner.",medium,plain,18,112,1,False,False,False,False,False,v1
+p006,"He promised to call back after lunch, but the afternoon passed quietly and the phone never rang.",medium,plain,17,96,1,False,False,False,False,False,v1
+p007,"When the storm finally cleared, the whole street came outside at once. Children splashed through the puddles, someone carried a ladder over to the fallen branch, and an older man stood on his porch counting the shingles that had blown off his roof.",long,plain,43,248,2,False,False,False,False,False,v1
+p008,"Our team spent most of the week testing a new scheduling system. The first version was slow and confusing, but after a few small changes it became the tool everyone reached for first, and nobody wanted to go back to the old spreadsheet.",long,plain,43,236,2,False,False,False,False,False,v1
+p009,"The library on the corner has been open for almost a century. It survived two floods, a fire in the basement, and several attempts to turn it into apartments, and on most afternoons it is still full of students reading quietly near the tall windows.",long,plain,45,249,2,False,False,False,False,False,v1
+p010,Your total comes to $42.75.,short,numbers,5,27,1,False,False,False,False,True,v1
+p011,The train leaves at 6:15 a.m.,short,numbers,6,29,1,False,False,False,False,True,v1
+p012,Call me back at 555-0147.,short,numbers,5,25,1,False,False,False,False,True,v1
+p013,"On March 3rd, 2024, the temperature dropped to minus 18 degrees, and the school closed for 2 days.",medium,numbers,18,98,1,False,False,False,False,True,v1
+p014,"The recipe calls for 2 1/2 cups of flour, 3 eggs, and about 350 grams of sugar.",medium,numbers,17,79,1,False,False,False,False,True,v1
+p015,"Revenue grew by 12.5% last quarter, rising from $1.2 million to roughly $1.35 million in total.",medium,numbers,16,95,1,False,False,False,False,True,v1
+p016,"Flight 857 departs Toronto at 10:40 p.m. on Friday, October 23rd, and lands in London at 10:55 a.m. local time. Passengers must check in at least 3 hours before departure, and each person may bring 2 bags weighing up to 23 kilograms.",long,numbers,42,233,4,False,False,False,False,True,v1
+p017,"The apartment costs $2,350 per month, plus $85 for parking and about $120 for utilities. The lease runs for 12 months starting November 1st, and the landlord asks for the first and last month's rent, which comes to $4,700 in total.",long,numbers,41,231,2,False,False,False,False,True,v1
+p018,"In the final round, the runner finished the 400 metres in 47.82 seconds, beating the previous record of 48.1 set in 1996. She had trained 6 days a week for 3 years, and her coach said she still had room to improve by at least half a second.",long,numbers,48,240,2,False,False,False,False,True,v1
+p019,Siobhan met Joaquín in Reykjavík.,short,names_rare_words,5,33,1,False,False,False,True,False,v1
+p020,Pass the quinoa and the gnocchi.,short,names_rare_words,6,32,1,False,False,False,False,False,v1
+p021,Professor Nguyen studies archaeopteryx fossils.,short,names_rare_words,5,47,1,False,False,False,False,False,v1
+p022,"Our guide, Thandiwe Mokoena, led us from Chichén Itzá to a quiet cenote near Valladolid before sunset.",medium,names_rare_words,17,102,1,False,False,False,True,False,v1
+p023,"The sommelier recommended a Gewürztraminer, but Aoife ordered the Sauvignon Blanc and a plate of bruschetta instead.",medium,names_rare_words,17,116,1,False,False,False,True,False,v1
+p024,Dr. Przybylski presented her research on chrysanthemum genetics at a conference in Wrocław last autumn.,medium,names_rare_words,15,103,2,False,False,False,True,True,v1
+p025,"Last summer, Ngozi and her cousin Xiomara drove from Saskatoon to Tsawwassen, stopping in Kamloops for a night. They ate pierogi in a tiny diner, photographed a pileated woodpecker near the highway, and argued for an hour about how to pronounce Saskatchewan correctly.",long,names_rare_words,43,268,2,False,False,False,False,False,v1
+p026,"The museum's new exhibit features a quetzal feather headdress, a Byzantine reliquary, and a set of Edo-period netsuke carvings. The curator, Ingrid Søndergaard, spent four years negotiating the loans with collectors in Kyoto, Istanbul, and Oaxaca before the doors finally opened.",long,names_rare_words,41,279,2,False,False,False,True,False,v1
+p027,"Before the concert, the conductor, Yevgeny Tsvetkov, explained that the program would open with a nocturne by Chopin, continue with a lesser-known étude by Szymanowski, and close with a piece by a young composer from Ouagadougou whose name most of the audience had never heard.",long,names_rare_words,45,277,1,False,False,False,True,False,v1
+p028,The CEO joined the call at noon.,short,acronyms_abbreviations,7,32,1,False,False,False,False,True,v1
+p029,Send the PDF to HR by Friday.,short,acronyms_abbreviations,7,29,1,False,False,False,False,True,v1
+p030,NASA delayed the launch again.,short,acronyms_abbreviations,5,30,1,False,False,False,False,True,v1
+p031,"The FAQ says to restart the VPN, clear your DNS cache, and then contact IT if the error persists.",medium,acronyms_abbreviations,19,97,1,False,False,False,False,True,v1
+p032,"Our GPU cluster runs CUDA 12, and the ML team wants an API endpoint for the TTS model by Q4.",medium,acronyms_abbreviations,20,92,1,False,False,False,False,True,v1
+p033,"St. Clair Ave. is closed from Jan. to Mar., so take the TTC or drive via Hwy. 401 instead.",medium,acronyms_abbreviations,19,90,5,False,False,False,False,True,v1
+p034,"According to the WHO, the new guidelines were drafted with input from the CDC, the NIH, and several NGOs. The FAQ on their website explains the changes in plain language, and a PDF version is available for anyone who needs it for an HR or compliance review.",long,acronyms_abbreviations,47,257,2,False,False,False,False,True,v1
+p035,"Our startup's MVP uses a REST API, a PostgreSQL database, and an LLM hosted on AWS. The CTO wants SSO and 2FA ready before the beta, while the UX lead is pushing for better SEO and faster page loads on iOS and Android.",long,acronyms_abbreviations,43,218,2,False,False,False,False,True,v1
+p036,"Mr. Okafor, the VP of Ops, sent an email at 9 a.m. asking everyone to submit their KPIs by EOD. He also reminded the team that the Q3 OKR review has moved from Rm. 204 to the main conference room, and that attendance is mandatory.",long,acronyms_abbreviations,45,230,5,False,False,False,False,True,v1
+p037,"Wait, you're leaving already?",short,prosody,4,29,1,True,False,False,False,False,v1
+p038,"Wow, that was incredible!",short,prosody,4,25,1,False,True,False,False,False,v1
+p039,Is this seat taken?,short,prosody,4,19,1,True,False,False,False,False,v1
+p040,"Did you really drive all night to get here, or did you take the early train like last time?",medium,prosody,19,91,1,True,False,False,False,False,v1
+p041,"Stop! Don't touch that wire, it might still be live, and the power company hasn't arrived yet!",medium,prosody,17,94,2,False,True,False,False,False,v1
+p042,"""I told you it would work,"" she whispered, ""but honestly, I never expected it to work this well.""",medium,prosody,18,97,1,False,False,True,False,False,v1
+p043,"Can you believe it? After three months of waiting, the package finally arrived this morning, and it was the wrong color! I called the store, and the man on the phone just sighed and asked, ""Would you like to wait another three months?"" I said no.",long,prosody,46,246,4,True,True,True,False,False,v1
+p044,"""Where were you last night?"" her brother asked, leaning against the doorframe. ""Out,"" she said. ""Out where?"" ""Just out!"" He laughed and shook his head, because he already knew the answer, and she knew that he knew, and neither of them was going to say it.",long,prosody,46,255,6,True,True,True,False,False,v1
+p045,"Honestly, what did they expect? You can't cancel the festival two days before it starts, refund only half the tickets, and then act surprised when people get angry. Some of us booked hotels! Some of us took time off work! Who exactly is going to pay for that?",long,prosody,48,259,5,True,True,False,False,False,v1
+p046,Six slick seals slid south.,short,phonetic,5,27,1,False,False,False,False,False,v1
+p047,Crisp crusts crackle and crumble.,short,phonetic,5,33,1,False,False,False,False,False,v1
+p048,Thirty thin thistles thrived.,short,phonetic,4,29,1,False,False,False,False,False,v1
+p049,"Priya's prickly purple pepper plants produced plenty of plump peppers, pleasing practically every passing pedestrian.",medium,phonetic,15,117,1,False,False,False,False,False,v1
+p050,Grey geese grazed gently in the glistening green grass while gruff goats gnawed on gnarled garden gates.,medium,phonetic,17,104,1,False,False,False,False,False,v1
+p051,"She thoroughly thought through three thousand theories, though the throbbing thunder threatened to throw off her thinking.",medium,phonetic,17,122,1,False,False,False,False,False,v1
+p052,"Wendy's wobbly wheelbarrow went wandering down the winding walkway, while Walter whistled warily and waved at the weary workers weaving willow baskets. When the wheelbarrow wedged itself between two wooden posts, everyone watched in wonder as Walter wrestled it free without wasting a single word.",long,phonetic,45,297,2,False,False,False,False,False,v1
+p053,"Silent sheets of sleet slipped silently across the slick slate roofs, and the shivering shepherd shuffled his sheep toward the shelter. Somewhere in the shadows a sly fox sniffed the cold air, sensed the shepherd's sharp stick, and slunk back into the shrubs.",long,phonetic,43,259,2,False,False,False,False,False,v1
+p054,"Clever Clara clutched a crumpled clipboard while crowds crossed the crowded crossing. Her cranky colleague Craig kept clicking his creaky pen, complaining that the crisp, clear criteria were confusing, contradictory, and completely impossible to calculate correctly.",long,phonetic,36,266,2,False,False,False,False,False,v1
