@@ -120,6 +120,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--guidance-scale", type=float, default=1.2)
     parser.add_argument("--speaker-scale", type=float, default=1.5)
     parser.add_argument(
+        "--voice-conditioning",
+        choices=("x-vector", "continuation"),
+        default="x-vector",
+        help=(
+            "Use reference audio for speaker identity only (x-vector), or also "
+            "condition on its transcript as continuation context"
+        ),
+    )
+    parser.add_argument(
         "--repeats",
         type=int,
         default=3,
@@ -383,6 +392,7 @@ def run_metadata(
         "nfe_values": list(args.nfe_values),
         "measured_repeats_per_prompt_nfe": args.repeats,
         "model": args.model,
+        "voice_conditioning": args.voice_conditioning,
         "revision": args.revision,
         "cache_dir": None if args.cache_dir is None else str(args.cache_dir),
         "precision": args.precision,
@@ -552,6 +562,7 @@ def generate_once(
     ode_method: str,
     guidance_scale: float,
     speaker_scale: float,
+    voice_conditioning: str,
 ) -> tuple[dict[str, Any], float]:
     seed_everything(seed)
     synchronize_if_cuda(torch, runtime)
@@ -561,7 +572,9 @@ def generate_once(
         prompt_audio_path=(
             None if prompt.reference_audio is None else str(prompt.reference_audio)
         ),
-        prompt_text=prompt.reference_text,
+        prompt_text=(
+            prompt.reference_text if voice_conditioning == "continuation" else None
+        ),
         num_steps=nfe,
         ode_method=ode_method,
         guidance_scale=guidance_scale,
@@ -578,6 +591,7 @@ def main(argv: list[str] | None = None) -> int:
         reference_audio=args.reference_audio,
         reference_text=args.reference_text,
     )
+    manifest_prompt_count = len(prompts)
     prompts = prompts[args.prompt_offset :]
     if args.prompt_limit is not None:
         prompts = prompts[: args.prompt_limit]
@@ -586,6 +600,11 @@ def main(argv: list[str] | None = None) -> int:
     safe_ids = [safe_prompt_id(prompt.prompt_id) for prompt in prompts]
     if len(set(safe_ids)) != len(safe_ids):
         raise ValueError("prompt_id values must produce unique output filenames")
+    print(
+        f"Prompt manifest: {args.manifest.expanduser().resolve()} "
+        f"({manifest_prompt_count} rows); selected {len(prompts)} prompts: "
+        f"{prompts[0].prompt_id} through {prompts[-1].prompt_id}"
+    )
 
     run_stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     output_dir = args.output_dir or (
@@ -689,7 +708,10 @@ def main(argv: list[str] | None = None) -> int:
         max_generate_length=args.max_generate_length,
         max_sequence_length=args.max_sequence_length,
     )
-    print(f"Loaded {args.model} on {runtime.device}; writing results under {output_dir}")
+    print(
+        f"Loaded {args.model} on {runtime.device} with "
+        f"{args.voice_conditioning} voice conditioning; writing results under {output_dir}"
+    )
 
     if args.warmup_runs_per_case:
         if args.warmup_policy == "representative-prompt":
@@ -716,6 +738,7 @@ def main(argv: list[str] | None = None) -> int:
                         ode_method=args.ode_method,
                         guidance_scale=args.guidance_scale,
                         speaker_scale=args.speaker_scale,
+                        voice_conditioning=args.voice_conditioning,
                     )
         else:
             print(
@@ -737,6 +760,7 @@ def main(argv: list[str] | None = None) -> int:
                             ode_method=args.ode_method,
                             guidance_scale=args.guidance_scale,
                             speaker_scale=args.speaker_scale,
+                            voice_conditioning=args.voice_conditioning,
                         )
 
     results_existed = results_path.exists()
@@ -783,6 +807,7 @@ def main(argv: list[str] | None = None) -> int:
                         ode_method=args.ode_method,
                         guidance_scale=args.guidance_scale,
                         speaker_scale=args.speaker_scale,
+                        voice_conditioning=args.voice_conditioning,
                     )
                     audio_duration = (
                         int(result["audio"].shape[-1]) / result["sample_rate"]

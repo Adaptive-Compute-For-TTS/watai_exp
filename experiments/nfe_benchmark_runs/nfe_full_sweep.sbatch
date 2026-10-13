@@ -17,6 +17,7 @@ python experiments/nfe_benchmark.py \
   --manifest experiments/benchmark_prompts_v1.csv \
   --reference-audio experiments/my_files/abhi1.wav \
   --reference-text "Hey, Adam here. Let's create something that feels real, sounds human, and connects every time." \
+  --voice-conditioning x-vector \
   --nfe-values 4 6 8 10 12 16 20 24 32 \
   --prompt-offset "$PROMPT_OFFSET" \
   --prompt-limit "$PROMPT_LIMIT" \
@@ -32,4 +33,4 @@ python experiments/nfe_benchmark.py \
   --max-sequence-length 2048 \
   --no-optimize \
   --resume \
-  --output-dir "experiments/nfe_benchmark_runs/nfe_54_prompts_v1_full_part_${SLURM_ARRAY_TASK_ID}"
+  --output-dir "experiments/nfe_benchmark_runs/nfe_54_prompts_v1_full_xvector_part_${SLURM_ARRAY_TASK_ID}"
