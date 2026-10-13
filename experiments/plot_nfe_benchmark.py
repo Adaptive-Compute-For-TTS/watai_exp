@@ -628,7 +628,7 @@ def main() -> int:
     graphs_dir = (
         args.graphs_dir.expanduser().resolve()
         if args.graphs_dir is not None
-        else Path(__file__).resolve().parents[1] / "graphs"
+        else Path(__file__).resolve().parents[1] / "graphs" / "01_pilot_rtx4090_single_prompt"
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     graphs_dir.mkdir(parents=True, exist_ok=True)

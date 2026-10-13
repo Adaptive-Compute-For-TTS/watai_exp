@@ -13,10 +13,10 @@ This is one target prompt repeated across NFE settings. It does not estimate per
 
 ## Charts
 
-- [Full dashboard](../../../../graphs/nfe_benchmark_dashboard.svg)
-- [NFE vs latency](../../../../graphs/nfe_latency.svg)
-- [NFE vs real-time factor](../../../../graphs/nfe_rtf.svg)
-- [NFE vs generated audio duration](../../../../graphs/nfe_audio_duration.svg)
+- [Full dashboard](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_benchmark_dashboard.svg)
+- [NFE vs latency](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_latency.svg)
+- [NFE vs real-time factor](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_rtf.svg)
+- [NFE vs generated audio duration](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_audio_duration.svg)
 
 ## Behavior classification
 

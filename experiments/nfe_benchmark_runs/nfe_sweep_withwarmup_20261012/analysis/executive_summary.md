@@ -14,9 +14,9 @@
 
 ## Figures and details
 
-- [Full dashboard](../../../../graphs/nfe_benchmark_dashboard.svg)
-- [Latency detail](../../../../graphs/nfe_latency.svg)
-- [Real-time factor detail](../../../../graphs/nfe_rtf.svg)
-- [Audio duration detail](../../../../graphs/nfe_audio_duration.svg)
+- [Full dashboard](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_benchmark_dashboard.svg)
+- [Latency detail](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_latency.svg)
+- [Real-time factor detail](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_rtf.svg)
+- [Audio duration detail](../../../../graphs/01_pilot_rtx4090_single_prompt/nfe_audio_duration.svg)
 - [Full analysis](analysis.md)
 - [Per-NFE summary table](nfe_summary.csv)
