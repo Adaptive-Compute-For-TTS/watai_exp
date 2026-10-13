@@ -16,8 +16,8 @@ For a small CPU correctness smoke run, use one prompt and one NFE:
         --prompt-limit 1 --repeats 1 --warmup-runs-per-case 0 \
         --output-dir /tmp/dots-tts-smoke
 
-The default prompt manifest is ``experiments/nfe_prompts.csv``. Its reference
-audio paths are resolved relative to the manifest file.
+The default prompt manifest is ``experiments/benchmark_prompts_v1.csv``. The
+shared reference audio and transcript default to the prior sweep's values.
 """
 
 from __future__ import annotations
@@ -33,9 +33,16 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_NFE_VALUES = (4, 8, 10, 16, 24, 32)
+DEFAULT_NFE_VALUES = (4, 6, 8, 10, 12, 16, 20, 24, 32)
 DEFAULT_MODEL = "dots-studio/dots.tts-soar"
-DEFAULT_MANIFEST = Path(__file__).with_name("nfe_prompts.csv")
+DEFAULT_MANIFEST = Path(__file__).with_name("benchmark_prompts_v1.csv")
+DEFAULT_REFERENCE_AUDIO = (
+    Path(__file__).resolve().with_name("my_files") / "abhi1.wav"
+)
+DEFAULT_REFERENCE_TEXT = (
+    "Hey, Adam here. Let's create something that feels real, sounds human, "
+    "and connects every time."
+)
 RESULT_FIELDS = (
     "prompt_id",
     "NFE",
@@ -56,6 +63,7 @@ RESULT_FIELDS = (
     "max_generate_length",
     "max_sequence_length",
 )
+SNAPSHOT_FIELDS = ("prompt_id", "text", "reference_audio", "reference_text")
 
 
 @dataclass(frozen=True)
@@ -79,12 +87,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--reference-audio",
         type=Path,
-        default=None,
+        default=DEFAULT_REFERENCE_AUDIO,
         help="Shared reference audio for manifest rows without reference_audio",
     )
     parser.add_argument(
         "--reference-text",
-        default=None,
+        default=DEFAULT_REFERENCE_TEXT,
         help="Shared transcript for manifest rows without reference_text",
     )
     parser.add_argument(
@@ -100,7 +108,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=list(DEFAULT_NFE_VALUES),
         metavar="N",
-        help="NFE values to benchmark (default: 4 8 10 16 24 32)",
+        help="NFE values to benchmark (default: 4 6 8 10 12 16 20 24 32)",
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
@@ -114,8 +122,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--repeats",
         type=int,
-        default=3,
-        help="Measured runs per prompt/NFE pair (default: 3)",
+        default=1,
+        help="Measured runs per prompt/NFE pair (default: 1)",
     )
     parser.add_argument("--precision", default="bfloat16")
     parser.add_argument(
@@ -155,6 +163,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Replace results.csv and WAV files already in the output directory",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue an existing run, skipping prompt/NFE/repeat cases already saved",
+    )
     args = parser.parse_args(argv)
 
     if not args.nfe_values or any(nfe <= 0 for nfe in args.nfe_values):
@@ -169,6 +182,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--prompt-limit must be positive")
     if args.prompt_offset < 0:
         parser.error("--prompt-offset cannot be negative")
+    if args.resume and args.overwrite:
+        parser.error("--resume and --overwrite cannot be used together")
     if args.max_generate_length <= 0 or args.max_sequence_length <= 0:
         parser.error("generation and sequence length limits must be positive")
     return args
@@ -283,6 +298,150 @@ def synchronize_if_cuda(torch: Any, runtime: Any) -> None:
         torch.cuda.synchronize(runtime.device)
 
 
+def prompt_snapshot_rows(prompts: list[BenchmarkPrompt]) -> list[dict[str, str]]:
+    return [
+        {
+            "prompt_id": prompt.prompt_id,
+            "text": prompt.text,
+            "reference_audio": (
+                "" if prompt.reference_audio is None else str(prompt.reference_audio)
+            ),
+            "reference_text": prompt.reference_text or "",
+        }
+        for prompt in prompts
+    ]
+
+
+def write_prompt_snapshot(
+    path: Path, prompts: list[BenchmarkPrompt], *, overwrite: bool = False
+) -> None:
+    mode = "w" if overwrite else "x"
+    with path.open(mode, newline="", encoding="utf-8") as snapshot_file:
+        writer = csv.DictWriter(snapshot_file, fieldnames=SNAPSHOT_FIELDS)
+        writer.writeheader()
+        writer.writerows(prompt_snapshot_rows(prompts))
+
+
+def validate_prompt_snapshot(path: Path, prompts: list[BenchmarkPrompt]) -> None:
+    if not path.is_file():
+        raise ValueError(
+            f"Cannot resume without the original prompt snapshot: {path}"
+        )
+    with path.open("r", newline="", encoding="utf-8") as snapshot_file:
+        reader = csv.DictReader(snapshot_file)
+        if tuple(reader.fieldnames or ()) != SNAPSHOT_FIELDS:
+            raise ValueError(f"Prompt snapshot has unexpected columns: {path}")
+        actual_rows = list(reader)
+    expected_rows = prompt_snapshot_rows(prompts)
+    if actual_rows != expected_rows:
+        raise ValueError(
+            "The selected prompts or reference audio/text differ from the saved run. "
+            "Use the original settings/output directory or choose a new output directory."
+        )
+
+
+def resume_config(args: argparse.Namespace) -> dict[str, str]:
+    return {
+        "model": str(args.model),
+        "precision": str(args.precision),
+        "optimize": str(args.optimize),
+        "seed": str(args.seed),
+        "ode_method": str(args.ode_method),
+        "guidance_scale": str(args.guidance_scale),
+        "speaker_scale": str(args.speaker_scale),
+        "max_generate_length": str(args.max_generate_length),
+        "max_sequence_length": str(args.max_sequence_length),
+    }
+
+
+def load_resume_state(
+    results_path: Path,
+    *,
+    prompts: list[BenchmarkPrompt],
+    nfe_values: list[int],
+    repeats: int,
+    output_dir: Path,
+    args: argparse.Namespace,
+) -> tuple[set[tuple[str, int, int]], list[dict[str, str]]]:
+    """Validate saved rows and return cases with both a CSV row and WAV file."""
+    if not results_path.exists():
+        return set(), []
+
+    raw_lines = results_path.read_bytes().splitlines(keepends=True)
+    if not raw_lines or not raw_lines[0].endswith(b"\n"):
+        raise ValueError(f"Existing results file has no complete CSV header: {results_path}")
+    complete_lines = raw_lines
+    dropped_partial_line = False
+    if not raw_lines[-1].endswith(b"\n"):
+        complete_lines = raw_lines[:-1]
+        dropped_partial_line = True
+
+    decoded = b"".join(complete_lines).decode("utf-8")
+    reader = csv.DictReader(decoded.splitlines())
+    if tuple(reader.fieldnames or ()) != RESULT_FIELDS:
+        raise ValueError(f"Results file has unexpected columns: {results_path}")
+
+    expected_cases = {
+        (prompt.prompt_id, nfe, repeat)
+        for prompt in prompts
+        for nfe in nfe_values
+        for repeat in range(1, repeats + 1)
+    }
+    config = resume_config(args)
+    rows: list[dict[str, str]] = []
+    seen: set[tuple[str, int, int]] = set()
+    completed: set[tuple[str, int, int]] = set()
+    rows_need_rewrite = dropped_partial_line
+
+    for row in reader:
+        if None in row or any(row.get(field) is None for field in RESULT_FIELDS):
+            raise ValueError(
+                "Results file contains a malformed complete CSV row; "
+                "repair it before resuming."
+            )
+        try:
+            case = (row["prompt_id"], int(row["NFE"]), int(row["repeat"]))
+        except ValueError as exc:
+            raise ValueError("Results file contains an invalid NFE/repeat value") from exc
+        if case not in expected_cases:
+            raise ValueError(
+                f"Saved result {case} does not match this prompt/NFE/repeat selection"
+            )
+        if case in seen:
+            raise ValueError(f"Results file contains a duplicate case: {case}")
+        seen.add(case)
+        for field, expected_value in config.items():
+            if row[field] != expected_value:
+                raise ValueError(
+                    f"Cannot resume because saved {field}={row[field]!r}, "
+                    f"but current setting is {expected_value!r}"
+                )
+
+        expected_wav = output_wav_path(
+            output_dir, case[0], case[1], case[2], repeats
+        )
+        if row["output_path"] != str(expected_wav):
+            raise ValueError(
+                f"Saved output path does not match this run: {row['output_path']}"
+            )
+        if not expected_wav.is_file():
+            # A saved row without its audio is incomplete and should rerun.
+            rows_need_rewrite = True
+            continue
+        rows.append(row)
+        completed.add(case)
+
+    if rows_need_rewrite:
+        temporary_path = results_path.with_name(results_path.name + ".resume.tmp")
+        with temporary_path.open("w", newline="", encoding="utf-8") as results_file:
+            writer = csv.DictWriter(results_file, fieldnames=RESULT_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+            results_file.flush()
+        temporary_path.replace(results_path)
+    return completed, rows
+
+
 def generate_once(
     *,
     runtime: Any,
@@ -349,17 +508,54 @@ def main(argv: list[str] | None = None) -> int:
         for nfe in args.nfe_values
         for repeat in range(1, args.repeats + 1)
     ]
-    existing_outputs = [
-        path
-        for path in [results_path, manifest_snapshot_path, *expected_wavs]
-        if path.exists()
-    ]
-    if existing_outputs and not args.overwrite:
-        paths = "\n".join(str(path) for path in existing_outputs)
-        raise FileExistsError(
-            "Output files already exist. Choose another --output-dir or pass "
-            f"--overwrite:\n{paths}"
+    completed_cases: set[tuple[str, int, int]] = set()
+    if args.resume:
+        if manifest_snapshot_path.exists():
+            validate_prompt_snapshot(manifest_snapshot_path, prompts)
+        elif results_path.exists():
+            validate_prompt_snapshot(manifest_snapshot_path, prompts)
+        else:
+            write_prompt_snapshot(manifest_snapshot_path, prompts)
+        completed_cases, _ = load_resume_state(
+            results_path,
+            prompts=prompts,
+            nfe_values=args.nfe_values,
+            repeats=args.repeats,
+            output_dir=output_dir,
+            args=args,
         )
+        total_cases = len(prompts) * len(args.nfe_values) * args.repeats
+        print(
+            f"Resume state: {len(completed_cases)}/{total_cases} cases complete; "
+            f"{total_cases - len(completed_cases)} remaining"
+        )
+        if len(completed_cases) == total_cases:
+            print(f"All cases already complete in {results_path}")
+            return 0
+    else:
+        existing_outputs = [
+            path
+            for path in [results_path, manifest_snapshot_path, *expected_wavs]
+            if path.exists()
+        ]
+        if existing_outputs and not args.overwrite:
+            paths = "\n".join(str(path) for path in existing_outputs)
+            raise FileExistsError(
+                "Output files already exist. Choose another --output-dir, "
+                "pass --resume to continue, or pass --overwrite to replace them:\n"
+                f"{paths}"
+            )
+        write_prompt_snapshot(manifest_snapshot_path, prompts, overwrite=args.overwrite)
+
+    pending_pairs = {
+        (prompt.prompt_id, nfe)
+        for prompt in prompts
+        for nfe in args.nfe_values
+        if any(
+            (prompt.prompt_id, nfe, repeat) not in completed_cases
+            for repeat in range(1, args.repeats + 1)
+        )
+    }
 
     import soundfile as sf
     import torch
@@ -378,34 +574,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"Loaded {args.model} on {runtime.device}; writing results under {output_dir}")
 
-    snapshot_mode = "w" if args.overwrite else "x"
-    with manifest_snapshot_path.open(
-        snapshot_mode, newline="", encoding="utf-8"
-    ) as snapshot_file:
-        snapshot_writer = csv.DictWriter(
-            snapshot_file,
-            fieldnames=("prompt_id", "text", "reference_audio", "reference_text"),
-        )
-        snapshot_writer.writeheader()
-        for prompt in prompts:
-            snapshot_writer.writerow(
-                {
-                    "prompt_id": prompt.prompt_id,
-                    "text": prompt.text,
-                    "reference_audio": (
-                        "" if prompt.reference_audio is None else prompt.reference_audio
-                    ),
-                    "reference_text": prompt.reference_text or "",
-                }
-            )
-
     if args.warmup_runs_per_case:
         print(
             f"Running {args.warmup_runs_per_case} unmeasured warmup(s) "
-            "for each prompt/NFE pair"
+            "for each pending prompt/NFE pair"
         )
         for prompt in prompts:
             for nfe in args.nfe_values:
+                if (prompt.prompt_id, nfe) not in pending_pairs:
+                    continue
                 for _ in range(args.warmup_runs_per_case):
                     generate_once(
                         runtime=runtime,
@@ -419,11 +596,16 @@ def main(argv: list[str] | None = None) -> int:
                         speaker_scale=args.speaker_scale,
                     )
 
-    open_mode = "w" if args.overwrite else "x"
+    results_existed = results_path.exists()
+    if args.resume:
+        open_mode = "a" if results_existed else "x"
+    else:
+        open_mode = "w" if args.overwrite else "x"
     with results_path.open(open_mode, newline="", encoding="utf-8") as results_file:
         writer = csv.DictWriter(results_file, fieldnames=RESULT_FIELDS)
-        writer.writeheader()
-        results_file.flush()
+        if not args.resume or not results_existed:
+            writer.writeheader()
+            results_file.flush()
 
         for prompt in prompts:
             for repeat in range(1, args.repeats + 1):
@@ -435,6 +617,9 @@ def main(argv: list[str] | None = None) -> int:
                     else tuple(reversed(args.nfe_values))
                 )
                 for nfe in nfe_order:
+                    case = (prompt.prompt_id, nfe, repeat)
+                    if case in completed_cases:
+                        continue
                     output_path = output_wav_path(
                         output_dir,
                         prompt.prompt_id,
@@ -442,7 +627,7 @@ def main(argv: list[str] | None = None) -> int:
                         repeat,
                         args.repeats,
                     )
-                    if output_path.exists() and not args.overwrite:
+                    if output_path.exists() and not (args.overwrite or args.resume):
                         raise FileExistsError(f"Output WAV already exists: {output_path}")
 
                     result, latency = generate_once(
@@ -486,6 +671,7 @@ def main(argv: list[str] | None = None) -> int:
                         }
                     )
                     results_file.flush()
+                    completed_cases.add(case)
                     print(
                         f"prompt={prompt.prompt_id} NFE={nfe} repeat={repeat} "
                         f"latency={latency:.3f}s audio={audio_duration:.3f}s "

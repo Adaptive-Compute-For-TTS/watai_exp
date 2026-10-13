@@ -30,4 +30,5 @@ python experiments/nfe_benchmark.py \
   --speaker-scale 1.5 \
   --max-sequence-length 2048 \
   --no-optimize \
-  --output-dir "experiments/nfe_benchmark_runs/nfe_54_prompts_v1_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+  --resume \
+  --output-dir "experiments/nfe_benchmark_runs/nfe_54_prompts_v1_part_${SLURM_ARRAY_TASK_ID}"
