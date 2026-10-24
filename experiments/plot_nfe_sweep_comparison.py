@@ -36,8 +36,12 @@ PILOT_GRAPHS = ROOT / "graphs" / "01_pilot_rtx4090_single_prompt"
 XVECTOR_GRAPHS = ROOT / "graphs" / "02_full_rtx4090_xvector_54_prompts"
 COMPARISON_GRAPHS = ROOT / "graphs" / "03_full_sweep_rtx3090_vs_rtx4090"
 ANALYSIS_DIR = RUN_ROOT / "analysis" / "full_sweep_xvector_comparison"
+CLEAN_SAMPLES_SUMMARY = ROOT / "experiments" / "clean_samples" / "run_summary.json"
 
 NFES = [4, 6, 8, 10, 12, 16, 20, 24, 32]
+# One latent patch is 0.16 s of 48 kHz audio; max_generate_length counts patches.
+PATCH_SECONDS = 0.16
+CAP_TOLERANCE_SECONDS = 0.01
 BASELINE_LABEL = "Original run, RTX 3090 (reported)"
 XVECTOR_LABEL = "X-vector run, RTX 4090 (reported)"
 BASELINE_COLOR = "#2563eb"
@@ -625,8 +629,31 @@ def write_report(
     duration_changes = [float(row["duration_median_change_s"]) for row in table]
     baseline_gpu = "RTX 3090, supplied by run owner"
     xvector_gpu = "RTX 4090, supplied by run owner"
+    baseline_durations = [row["audio_duration_seconds"] for row in baseline_rows]
+    xvector_durations = [row["audio_duration_seconds"] for row in xvector_rows]
+    baseline_max_duration = max(baseline_durations)
+    baseline_at_max = sum(
+        duration >= baseline_max_duration - CAP_TOLERANCE_SECONDS
+        for duration in baseline_durations
+    )
+    xvector_cap = int(xvector_meta["max_generate_length"]) * PATCH_SECONDS
+    xvector_at_cap = sum(
+        duration >= xvector_cap - CAP_TOLERANCE_SECONDS for duration in xvector_durations
+    )
     lines = [
         "# Full NFE sweep comparison: original run and x-vector rerun",
+        "",
+        "> **Data validity warning.** The original run passed the reference transcript "
+        "(continuation mode; `nfe_benchmark.py` before commit `65d27f5`), and "
+        f"{baseline_at_max} of {len(baseline_rows)} of its WAVs stop at exactly "
+        f"{baseline_max_duration:.2f} s, the 80-patch generation cap minus the reference audio. "
+        f"In the x-vector run, {xvector_at_cap} of {len(xvector_rows)} WAVs stop at the "
+        f"{xvector_cap:.1f} s cap. Median WAV duration is "
+        f"{statistics.median(baseline_durations):.2f} s vs "
+        f"{statistics.median(xvector_durations):.2f} s, so the latency comparison below mostly "
+        "reflects how much audio each run generated, not the GPU or x-vector conditioning. "
+        f"Per-NFE median RTF ({min(rtf_changes):.1f}% to {max(rtf_changes):.1f}%) is the fairer "
+        "comparison. See `experiments/clean_samples/` for per-WAV flags and ASR-checked samples.",
         "",
         "## Scope and validation",
         "",
@@ -682,6 +709,40 @@ def write_report(
     write_summary_csv(table, ANALYSIS_DIR / "comparison_by_nfe.csv")
 
 
+def data_validity_lines() -> list[str]:
+    """Run-index warning built from clean_samples/run_summary.json, if present."""
+    if not CLEAN_SAMPLES_SUMMARY.is_file():
+        return []
+    summary = json.loads(CLEAN_SAMPLES_SUMMARY.read_text(encoding="utf-8"))
+    baseline = summary["baseline_continuation_3090"]
+    xvector = summary["xvector_4090"]
+    changes = summary["xvector_vs_baseline_per_nfe"].values()
+    latency_changes = [abs(change["latency_median_change_pct"]) for change in changes]
+    rtf_changes = [abs(change["rtf_median_change_pct"]) for change in changes]
+    clean_max = max(
+        float(row["duration_seconds"])
+        for row in read_csv(CLEAN_SAMPLES_SUMMARY.with_name("wav_flags.csv"))
+        if row["status"] == "clean_candidate"
+    )
+    short_at_max = baseline["per_bucket"]["short"]["at_run_max_duration"]
+    short_rows = baseline["per_bucket"]["short"]["rows"]
+    xvector_cap = xvector["max_duration_seconds"]
+    return [
+        "## Data validity — read before using these WAVs or latency numbers",
+        "",
+        f"Every archived run used `max_generate_length=80`. One latent patch is {summary['patch_seconds']} s, so generation is capped at {xvector_cap:.1f} s of audio. Per-WAV flags are in [`clean_samples/wav_flags.csv`](../clean_samples/wav_flags.csv) and the figures below come from [`clean_samples/run_summary.json`](../clean_samples/run_summary.json).",
+        "",
+        f"- **Original run (`nfe_54_prompts_v1_full_part_*`) is continuation mode and capped.** Before commit `65d27f5`, `nfe_benchmark.py` always passed the reference transcript as `prompt_text`, so this run conditioned on \"Hey, Adam here…\" as continuation context. The reference audio consumes part of the 80-patch budget; {baseline['rows_at_run_max_duration']} of {baseline['rows']} WAVs stop at exactly {baseline['max_duration_seconds']:.2f} s, including every medium and long prompt and {short_at_max} of {short_rows} short ones. Generation length, and therefore latency, is set by the cap rather than the text. All {baseline['rows']} rows are flagged `contaminated_continuation`.",
+        "- **Pilot and smoke runs (`nfe_sweep_*`, `abhi_smoke_*`, `smoke_*`) are also continuation mode** and flagged the same way.",
+        f"- **X-vector run (`nfe_54_prompts_v1_full_xvector_part_*`): all {xvector['per_bucket']['long']['at_cap']} long-prompt WAVs are truncated** at {xvector_cap:.1f} s (`truncated_at_cap`). The {xvector['status_counts']['clean_candidate']} short and medium WAVs end before the cap (longest {clean_max:.2f} s) and are `clean_candidate`.",
+        f"- **The original vs x-vector latency comparison is confounded.** Per-NFE median latency is {min(latency_changes):.1f}–{max(latency_changes):.1f}% lower in the x-vector run, but its median WAV is {summary['xvector_overall_duration_median_s']:.1f} s against {summary['baseline_overall_duration_median_s']:.2f} s, so it generated less audio. Per-NFE median RTF differs by only {min(rtf_changes):.1f}–{max(rtf_changes):.1f}%, which is the fairer comparison, and even that mixes conditioning mode, GPU, and the cap.",
+        "- **New runs default to `max_generate_length=500`** (the upstream default) and warn when an x-vector output reaches the cap. Their latency numbers are not directly comparable to these archived runs.",
+        "",
+        "ASR-checked clean and demo-safe samples are in [`clean_samples/`](../clean_samples/).",
+        "",
+    ]
+
+
 def write_indexes() -> None:
     graphs_readme = [
         "# Benchmark figures",
@@ -719,6 +780,7 @@ def write_indexes() -> None:
         "",
         "The full runs are split into two parts, with 27 prompts in each. Part 0 contains p001-p027; part 1 contains p028-p054. Each prompt is measured once at each of the nine NFE values, giving 486 rows per complete run.",
         "",
+        *data_validity_lines(),
         "## Run groups",
         "",
         "| Run | Hardware label | Conditioning / purpose | Data folders | Figures and analysis |",
