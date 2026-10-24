@@ -141,7 +141,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=False,
         help="Use the optimized inference path (default: disabled)",
     )
-    parser.add_argument("--max-generate-length", type=int, default=80)
+    parser.add_argument(
+        "--max-generate-length",
+        type=int,
+        default=500,
+        help=(
+            "Latent patch budget per generation (default: 500, the upstream "
+            "default). Archived runs used 80, which truncated long prompts"
+        ),
+    )
     parser.add_argument("--max-sequence-length", type=int, default=2048)
     parser.add_argument(
         "--warmup-runs-per-case",
@@ -708,6 +716,7 @@ def main(argv: list[str] | None = None) -> int:
         max_generate_length=args.max_generate_length,
         max_sequence_length=args.max_sequence_length,
     )
+    samples_per_patch = int(runtime.model.config.patch_size * runtime.model.hop_size)
     print(
         f"Loaded {args.model} on {runtime.device} with "
         f"{args.voice_conditioning} voice conditioning; writing results under {output_dir}"
@@ -814,6 +823,16 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     audio = result["audio"].detach().float().cpu().squeeze().numpy()
                     rtf = latency / audio_duration if audio_duration > 0 else float("inf")
+                    generated_patches = int(result["audio"].shape[-1]) // samples_per_patch
+                    if (
+                        args.voice_conditioning == "x-vector"
+                        and generated_patches >= args.max_generate_length
+                    ):
+                        print(
+                            f"WARNING: prompt={prompt.prompt_id} NFE={nfe} reached "
+                            f"max_generate_length={args.max_generate_length}; "
+                            "the output is likely truncated"
+                        )
                     sf.write(output_path, audio, result["sample_rate"])
 
                     writer.writerow(
