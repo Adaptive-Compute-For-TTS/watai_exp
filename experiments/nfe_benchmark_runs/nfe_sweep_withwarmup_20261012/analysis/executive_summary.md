@@ -4,6 +4,8 @@
 **Coverage:** 45 measured generations across 9 NFE settings, 5 repeats per setting. Warmups are excluded.
 **Configuration:** RTX 4090, CUDA, bfloat16, Euler, seed 42, guidance 1.2, speaker scale 1.5.
 
+> **Data validity warning.** This run passed the reference transcript (continuation mode; `nfe_benchmark.py` before commit `65d27f5`), so its outputs may contain the reference intro instead of only the target text. 25 of 45 WAVs stop at the run's maximum duration of 9.12 s, consistent with the 80-patch generation cap minus the reference audio. Do not use these WAVs as clean samples; see `experiments/clean_samples/`.
+
 ## Findings
 
 - Median latency rises from 6.96 seconds at NFE 4 to 36.09 seconds at NFE 32, a 5.19x increase.

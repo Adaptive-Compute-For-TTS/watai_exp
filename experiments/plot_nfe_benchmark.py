@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import csv
 import html
+import json
 import math
 import os
 import statistics
@@ -25,6 +26,9 @@ GRID_COLOR = "#e2e8f0"
 TEXT_COLOR = "#1e293b"
 MUTED_COLOR = "#64748b"
 THRESHOLD_COLOR = "#dc2626"
+# One latent patch is 0.16 s of 48 kHz audio; max_generate_length counts patches.
+PATCH_SECONDS = 0.16
+CAP_TOLERANCE_SECONDS = 0.01
 
 
 def percentile(values: list[float], fraction: float) -> float:
@@ -65,6 +69,39 @@ def load_rows(path: Path, prompt_id: str | None) -> tuple[list[dict[str, Any]], 
             row[field] = float(row[field])
 
     return rows, rows[0]["prompt_id"]
+
+
+def data_validity_warning(rows: list[dict[str, Any]], source: Path) -> str | None:
+    """Flag continuation-mode runs and outputs that stopped at the length cap."""
+    metadata_path = source.parent / "run_metadata.json"
+    conditioning = "continuation"
+    if metadata_path.is_file():
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if metadata.get("voice_conditioning") == "x-vector":
+            conditioning = "x-vector"
+    durations = [float(row["audio_duration_seconds"]) for row in rows]
+    max_generate_length = int(rows[0]["max_generate_length"])
+    if conditioning == "continuation":
+        max_duration = max(durations)
+        at_max = sum(d >= max_duration - CAP_TOLERANCE_SECONDS for d in durations)
+        return (
+            "> **Data validity warning.** This run passed the reference transcript "
+            "(continuation mode; `nfe_benchmark.py` before commit `65d27f5`), so its "
+            "outputs may contain the reference intro instead of only the target text. "
+            f"{at_max} of {len(rows)} WAVs stop at the run's maximum duration of "
+            f"{max_duration:.2f} s, consistent with the {max_generate_length}-patch "
+            "generation cap minus the reference audio. Do not use these WAVs as clean "
+            "samples; see `experiments/clean_samples/`."
+        )
+    cap = max_generate_length * PATCH_SECONDS
+    capped = sum(d >= cap - CAP_TOLERANCE_SECONDS for d in durations)
+    if capped:
+        return (
+            f"> **Data validity warning.** {capped} of {len(rows)} WAVs stop at the "
+            f"{cap:.1f} s cap set by max_generate_length={max_generate_length} and are "
+            "likely truncated."
+        )
+    return None
 
 
 def load_prompt_text(source: Path, prompt_id: str) -> str:
@@ -483,6 +520,7 @@ def write_report(
         f"Measured generations: {len(rows)} across {len(summaries)} NFE values, "
         f"with {summaries[0]['repeats']} measured repeats per NFE.",
         "",
+        *([warning, ""] if (warning := data_validity_warning(rows, source)) else []),
         "## Benchmark configuration",
         "",
         "The saved result rows report `dots-studio/dots.tts-soar`, CUDA, bfloat16, "
@@ -565,6 +603,7 @@ def write_executive_summary(
     rows: list[dict[str, Any]],
     summaries: list[dict[str, float | int]],
     *,
+    source: Path,
     prompt_id: str,
     prompt_text: str,
     graphs_dir: Path,
@@ -582,6 +621,7 @@ def write_executive_summary(
         f"{summaries[0]['repeats']} repeats per setting. Warmups are excluded.",
         "**Configuration:** RTX 4090, CUDA, bfloat16, Euler, seed 42, guidance 1.2, speaker scale 1.5.",
         "",
+        *([warning, ""] if (warning := data_validity_warning(rows, source)) else []),
         "## Findings",
         "",
         f"- Median latency rises from {float(first['latency_median_s']):.2f} seconds at "
@@ -646,6 +686,7 @@ def main() -> int:
     write_executive_summary(
         rows,
         summaries,
+        source=source,
         prompt_id=prompt_id,
         prompt_text=prompt_text,
         graphs_dir=graphs_dir,
