@@ -215,10 +215,13 @@ def transcribe(
     normalize = WhisperProcessor.from_pretrained(asr_model).tokenizer.normalize
     recognizer = None
     if pending:
+        # Whisper-large-v3 with SDPA attention on MPS decodes to "!!!!"; eager works.
+        model_kwargs = {"attn_implementation": "eager"} if device == "mps" else {}
         recognizer = pipeline(
             "automatic-speech-recognition",
             model=asr_model,
             device=device,
+            model_kwargs=model_kwargs,
         )
 
     scored: list[dict[str, Any]] = []
@@ -256,7 +259,19 @@ def transcribe(
                 "transformers_version": transformers.__version__,
             }
         )
+    check_transcripts(scored)
     return scored
+
+
+def check_transcripts(scored: list[dict[str, Any]], max_empty_fraction: float = 0.2) -> None:
+    """Fail loudly when the ASR backend returns no words for many clips."""
+    empty = [row for row in scored if not row["normalized_transcript"].strip()]
+    if scored and len(empty) / len(scored) > max_empty_fraction:
+        raise RuntimeError(
+            f"{len(empty)}/{len(scored)} transcripts contain no words "
+            f"(e.g. {empty[0]['transcript'][:40]!r}); the ASR backend is likely broken. "
+            "Not writing scores."
+        )
 
 
 def write_asr_scores(scored: list[dict[str, Any]]) -> None:
