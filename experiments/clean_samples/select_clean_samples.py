@@ -365,13 +365,25 @@ def pick_clean_set(
 
 
 def pick_demo_set(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Best demo-safe prompt per category, then fill by rank up to the limit."""
+    """Best demo-safe prompt per category, then medium prompts, then fill by rank."""
     safe = sorted((c for c in candidates if c["demo_safe"]), key=rank_key)
     picks = []
     for category in CATEGORIES:
         best = next((c for c in safe if c["category"] == category), None)
         if best is not None:
             picks.append(best)
+    picked_medium_categories = {
+        c["category"] for c in picks if c["length_bucket"] == "medium"
+    }
+    for candidate in safe:
+        if len(picks) >= DEMO_PROMPT_LIMIT:
+            break
+        if (
+            candidate["length_bucket"] == "medium"
+            and candidate["category"] not in picked_medium_categories
+        ):
+            picks.append(candidate)
+            picked_medium_categories.add(candidate["category"])
     for candidate in safe:
         if len(picks) >= DEMO_PROMPT_LIMIT:
             break
@@ -432,7 +444,7 @@ def write_manifest(
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
     with (directory / "manifest.csv").open("w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(csv_file, fieldnames=list(rows[0]) if rows else ["file"])
         writer.writeheader()
         writer.writerows(rows)
 
