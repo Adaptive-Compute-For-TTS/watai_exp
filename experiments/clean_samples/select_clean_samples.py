@@ -422,6 +422,33 @@ def write_manifest(
         writer.writerows(rows)
 
 
+def write_demo_readme(rows: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+    lines = [
+        "# Demo-safe samples",
+        "",
+        "Archived RTX 4090 x-vector outputs that are safe to play for an audience: no "
+        f"word errors at NFE {DEMO_NFE} under `{metadata['asr_model']}`, ended before the "
+        "length cap, and passed the signal checks (no clipping, no long silences, not "
+        f"cut off) at NFE {', '.join(str(n) for n in metadata['selection_nfes'])}. "
+        f"NFE {', '.join(str(n) for n in metadata['contrast_nfes'])} is included as a "
+        "low-step contrast and may contain audible errors; its WER is reported.",
+        "",
+        "Fill in the **Listened** column by ear before rehearsal (Tue Oct 27). Replace a "
+        "prompt that sounds wrong rather than editing the WAV.",
+        "",
+        "| File | Prompt | Category | NFE | Duration (s) | Latency (s) | RTF | Word errors | WER | Listened |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in rows:
+        lines.append(
+            f"| [{row['file']}]({row['file']}) | {row['text']} | {row['category']} | "
+            f"{row['NFE']} | {row['duration_seconds']:.2f} | {row['latency_seconds']:.2f} | "
+            f"{row['RTF']:.2f} | {row['word_errors']} | {row['WER']:.2f} | ☐ |"
+        )
+    lines.append("")
+    (DEMO_SET_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     flags = load_csv(FLAGS_PATH)
@@ -468,6 +495,7 @@ def main(argv: list[str] | None = None) -> int:
         demo_rows,
         {**metadata, "demo_rule": f"0 word errors at NFE {DEMO_NFE}; signal checks pass at selection NFEs"},
     )
+    write_demo_readme(demo_rows, metadata)
 
     demo_ids = {pick["prompt_id"] for pick in demo_picks}
     safe_prompts = [
