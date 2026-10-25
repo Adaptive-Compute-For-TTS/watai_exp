@@ -1,0 +1,230 @@
+{
+  "patch_seconds": 0.16,
+  "all_runs_status_counts": {
+    "contaminated_continuation": 542,
+    "clean_candidate": 324,
+    "truncated_at_cap": 162
+  },
+  "rows_per_run": {
+    "abhi_smoke_20261011": 1,
+    "nfe_54_prompts_v1_full_part_0": 243,
+    "nfe_54_prompts_v1_full_part_1": 243,
+    "nfe_54_prompts_v1_full_xvector_part_0": 243,
+    "nfe_54_prompts_v1_full_xvector_part_1": 243,
+    "nfe_sweep_20261011": 9,
+    "nfe_sweep_withwarmup_20261012": 45,
+    "smoke_20261011_run1": 1
+  },
+  "baseline_continuation_3090": {
+    "rows": 486,
+    "status_counts": {
+      "contaminated_continuation": 486
+    },
+    "max_duration_seconds": 9.12,
+    "rows_at_run_max_duration": 445,
+    "per_nfe": {
+      "4": {
+        "latency_median_s": 7.6742155,
+        "duration_median_s": 9.12,
+        "rtf_median": 0.841471
+      },
+      "6": {
+        "latency_median_s": 9.873399500000001,
+        "duration_median_s": 9.12,
+        "rtf_median": 1.0826095
+      },
+      "8": {
+        "latency_median_s": 12.154529499999999,
+        "duration_median_s": 9.12,
+        "rtf_median": 1.3327335
+      },
+      "10": {
+        "latency_median_s": 14.299182,
+        "duration_median_s": 9.12,
+        "rtf_median": 1.5719634999999998
+      },
+      "12": {
+        "latency_median_s": 17.098306,
+        "duration_median_s": 9.12,
+        "rtf_median": 1.874814
+      },
+      "16": {
+        "latency_median_s": 21.765254,
+        "duration_median_s": 9.12,
+        "rtf_median": 2.3865410000000002
+      },
+      "20": {
+        "latency_median_s": 27.111884,
+        "duration_median_s": 9.12,
+        "rtf_median": 2.972794
+      },
+      "24": {
+        "latency_median_s": 30.5494045,
+        "duration_median_s": 9.12,
+        "rtf_median": 3.368427
+      },
+      "32": {
+        "latency_median_s": 39.714524999999995,
+        "duration_median_s": 9.12,
+        "rtf_median": 4.3751385
+      }
+    },
+    "per_bucket": {
+      "long": {
+        "rows": 162,
+        "at_cap": 0,
+        "at_run_max_duration": 162,
+        "latency_median_s": 20.860222999999998,
+        "duration_median_s": 9.12,
+        "rtf_median": 2.287305
+      },
+      "medium": {
+        "rows": 162,
+        "at_cap": 0,
+        "at_run_max_duration": 162,
+        "latency_median_s": 21.626432,
+        "duration_median_s": 9.12,
+        "rtf_median": 2.3713195000000002
+      },
+      "short": {
+        "rows": 162,
+        "at_cap": 0,
+        "at_run_max_duration": 121,
+        "latency_median_s": 22.4844175,
+        "duration_median_s": 9.12,
+        "rtf_median": 2.557584
+      }
+    }
+  },
+  "xvector_4090": {
+    "rows": 486,
+    "status_counts": {
+      "clean_candidate": 324,
+      "truncated_at_cap": 162
+    },
+    "max_duration_seconds": 12.8,
+    "rows_at_run_max_duration": 162,
+    "per_nfe": {
+      "4": {
+        "latency_median_s": 5.5314309999999995,
+        "duration_median_s": 7.12,
+        "rtf_median": 0.786219
+      },
+      "6": {
+        "latency_median_s": 7.173013,
+        "duration_median_s": 6.96,
+        "rtf_median": 1.0024975
+      },
+      "8": {
+        "latency_median_s": 8.560127,
+        "duration_median_s": 6.96,
+        "rtf_median": 1.241914
+      },
+      "10": {
+        "latency_median_s": 9.9649205,
+        "duration_median_s": 6.72,
+        "rtf_median": 1.473771
+      },
+      "12": {
+        "latency_median_s": 11.0662025,
+        "duration_median_s": 6.48,
+        "rtf_median": 1.7265255
+      },
+      "16": {
+        "latency_median_s": 14.5046865,
+        "duration_median_s": 6.720000000000001,
+        "rtf_median": 2.2177845
+      },
+      "20": {
+        "latency_median_s": 17.805772,
+        "duration_median_s": 6.64,
+        "rtf_median": 2.647523
+      },
+      "24": {
+        "latency_median_s": 21.095806,
+        "duration_median_s": 6.72,
+        "rtf_median": 3.141259
+      },
+      "32": {
+        "latency_median_s": 26.213403,
+        "duration_median_s": 6.4,
+        "rtf_median": 4.0604759999999995
+      }
+    },
+    "per_bucket": {
+      "long": {
+        "rows": 162,
+        "at_cap": 162,
+        "at_run_max_duration": 162,
+        "latency_median_s": 22.2936635,
+        "duration_median_s": 12.8,
+        "rtf_median": 1.7416925
+      },
+      "medium": {
+        "rows": 162,
+        "at_cap": 0,
+        "at_run_max_duration": 0,
+        "latency_median_s": 12.049114,
+        "duration_median_s": 6.8,
+        "rtf_median": 1.7450545000000002
+      },
+      "short": {
+        "rows": 162,
+        "at_cap": 0,
+        "at_run_max_duration": 0,
+        "latency_median_s": 4.85858,
+        "duration_median_s": 2.72,
+        "rtf_median": 1.7611005
+      }
+    }
+  },
+  "xvector_vs_baseline_per_nfe": {
+    "4": {
+      "latency_median_change_pct": -27.921870320164977,
+      "rtf_median_change_pct": -6.566120519899076,
+      "duration_median_change_s": -1.9999999999999991
+    },
+    "6": {
+      "latency_median_change_pct": -27.35011887243093,
+      "rtf_median_change_pct": -7.399898116541559,
+      "duration_median_change_s": -2.1599999999999993
+    },
+    "8": {
+      "latency_median_change_pct": -29.572535078383744,
+      "rtf_median_change_pct": -6.814528185867619,
+      "duration_median_change_s": -2.1599999999999993
+    },
+    "10": {
+      "latency_median_change_pct": -30.311254867586136,
+      "rtf_median_change_pct": -6.246487275308866,
+      "duration_median_change_s": -2.3999999999999995
+    },
+    "12": {
+      "latency_median_change_pct": -35.27895395017495,
+      "rtf_median_change_pct": -7.909504622858588,
+      "duration_median_change_s": -2.639999999999999
+    },
+    "16": {
+      "latency_median_change_pct": -33.35852409533102,
+      "rtf_median_change_pct": -7.071175395687746,
+      "duration_median_change_s": -2.3999999999999986
+    },
+    "20": {
+      "latency_median_change_pct": -34.32484441140276,
+      "rtf_median_change_pct": -10.941592320221305,
+      "duration_median_change_s": -2.4799999999999995
+    },
+    "24": {
+      "latency_median_change_pct": -30.945279146112327,
+      "rtf_median_change_pct": -6.744038092557747,
+      "duration_median_change_s": -2.3999999999999995
+    },
+    "32": {
+      "latency_median_change_pct": -33.99542610669521,
+      "rtf_median_change_pct": -7.192058034277105,
+      "duration_median_change_s": -2.719999999999999
+    }
+  },
+  "xvector_overall_duration_median_s": 6.8,
+  "baseline_overall_duration_median_s": 9.12
+}

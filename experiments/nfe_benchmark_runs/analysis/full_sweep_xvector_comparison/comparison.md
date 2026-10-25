@@ -1,5 +1,7 @@
 # Full NFE sweep comparison: original run and x-vector rerun
 
+> **Data validity warning.** The original run passed the reference transcript (continuation mode; `nfe_benchmark.py` before commit `65d27f5`), and 445 of 486 of its WAVs stop at exactly 9.12 s, the 80-patch generation cap minus the reference audio. In the x-vector run, 162 of 486 WAVs stop at the 12.8 s cap. Median WAV duration is 9.12 s vs 6.80 s, so the latency comparison below mostly reflects how much audio each run generated, not the GPU or x-vector conditioning. Per-NFE median RTF (-10.9% to -6.2%) is the fairer comparison. See `experiments/clean_samples/` for per-WAV flags and ASR-checked samples.
+
 ## Scope and validation
 
 The original and x-vector datasets each contain 486 measured generations: 54 prompts multiplied by 9 NFE values. Every prompt/NFE pair appears once in each run. The two prompt snapshots match exactly, and the comparison is paired by prompt ID and NFE. All referenced WAVs exist, their sample durations match results.csv, and the 27 WAVs at each NFE in each part have distinct waveform samples. This rules out exact waveform reuse across prompts in these archived parts; it does not establish that each WAV speaks its assigned text.

@@ -1,0 +1,194 @@
+{
+  "source_runs": [
+    "nfe_54_prompts_v1_full_xvector_part_0",
+    "nfe_54_prompts_v1_full_xvector_part_1"
+  ],
+  "asr_model": "openai/whisper-large-v3",
+  "transformers_version": "4.57.0",
+  "selection_nfes": [
+    20,
+    32
+  ],
+  "contrast_nfes": [
+    4
+  ],
+  "pass_rule": "word_errors <= max(1, round(0.10 * reference_words)) after Whisper English normalization",
+  "eligible_prompts": 32,
+  "prompts": [
+    {
+      "id": "p001",
+      "text": "The kettle is already on the stove.",
+      "category": "plain",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p002",
+      "text": "Please close the window before you leave.",
+      "category": "plain",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p003",
+      "text": "We walked home along the river.",
+      "category": "plain",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p004",
+      "text": "After the meeting ended, she packed her notes into a canvas bag and caught the last bus downtown.",
+      "category": "plain",
+      "length_bucket": "medium",
+      "in_demo_set": true
+    },
+    {
+      "id": "p005",
+      "text": "The garden looks different every spring, because my neighbor keeps moving the tomato plants to a sunnier corner.",
+      "category": "plain",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p006",
+      "text": "He promised to call back after lunch, but the afternoon passed quietly and the phone never rang.",
+      "category": "plain",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p010",
+      "text": "Your total comes to $42.75.",
+      "category": "numbers",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p012",
+      "text": "Call me back at 555-0147.",
+      "category": "numbers",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p013",
+      "text": "On March 3rd, 2024, the temperature dropped to minus 18 degrees, and the school closed for 2 days.",
+      "category": "numbers",
+      "length_bucket": "medium",
+      "in_demo_set": true
+    },
+    {
+      "id": "p014",
+      "text": "The recipe calls for 2 1/2 cups of flour, 3 eggs, and about 350 grams of sugar.",
+      "category": "numbers",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p021",
+      "text": "Professor Nguyen studies archaeopteryx fossils.",
+      "category": "names_rare_words",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p023",
+      "text": "The sommelier recommended a Gew\u00fcrztraminer, but Aoife ordered the Sauvignon Blanc and a plate of bruschetta instead.",
+      "category": "names_rare_words",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p028",
+      "text": "The CEO joined the call at noon.",
+      "category": "acronyms_abbreviations",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p029",
+      "text": "Send the PDF to HR by Friday.",
+      "category": "acronyms_abbreviations",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p030",
+      "text": "NASA delayed the launch again.",
+      "category": "acronyms_abbreviations",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p031",
+      "text": "The FAQ says to restart the VPN, clear your DNS cache, and then contact IT if the error persists.",
+      "category": "acronyms_abbreviations",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p038",
+      "text": "Wow, that was incredible!",
+      "category": "prosody",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p039",
+      "text": "Is this seat taken?",
+      "category": "prosody",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p040",
+      "text": "Did you really drive all night to get here, or did you take the early train like last time?",
+      "category": "prosody",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p041",
+      "text": "Stop! Don't touch that wire, it might still be live, and the power company hasn't arrived yet!",
+      "category": "prosody",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p042",
+      "text": "\"I told you it would work,\" she whispered, \"but honestly, I never expected it to work this well.\"",
+      "category": "prosody",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p046",
+      "text": "Six slick seals slid south.",
+      "category": "phonetic",
+      "length_bucket": "short",
+      "in_demo_set": true
+    },
+    {
+      "id": "p047",
+      "text": "Crisp crusts crackle and crumble.",
+      "category": "phonetic",
+      "length_bucket": "short",
+      "in_demo_set": false
+    },
+    {
+      "id": "p049",
+      "text": "Priya's prickly purple pepper plants produced plenty of plump peppers, pleasing practically every passing pedestrian.",
+      "category": "phonetic",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    },
+    {
+      "id": "p051",
+      "text": "She thoroughly thought through three thousand theories, though the throbbing thunder threatened to throw off her thinking.",
+      "category": "phonetic",
+      "length_bucket": "medium",
+      "in_demo_set": false
+    }
+  ]
+}

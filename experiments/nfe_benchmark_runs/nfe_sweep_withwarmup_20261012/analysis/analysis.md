@@ -5,6 +5,8 @@ Prompt ID: `short`
 Target text: The small red bird landed on the garden fence.
 Measured generations: 45 across 9 NFE values, with 5 measured repeats per NFE.
 
+> **Data validity warning.** This run passed the reference transcript (continuation mode; `nfe_benchmark.py` before commit `65d27f5`), so its outputs may contain the reference intro instead of only the target text. 25 of 45 WAVs stop at the run's maximum duration of 9.12 s, consistent with the 80-patch generation cap minus the reference audio. Do not use these WAVs as clean samples; see `experiments/clean_samples/`.
+
 ## Benchmark configuration
 
 The saved result rows report `dots-studio/dots.tts-soar`, CUDA, bfloat16, Euler, seed 42, guidance scale 1.2, speaker scale 1.5, max generation length 80, max sequence length 2048, and optimization disabled. The associated run summary reports one unmeasured warmup per NFE. Warmups are not present in the measured results CSV.
